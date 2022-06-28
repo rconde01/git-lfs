@@ -32,6 +32,8 @@ type Rewriter struct {
 	// (blobs, subtrees) are modifiable given a BlobFn. If non-nil, this
 	// filter will cull out any unmodifiable subtrees and blobs.
 	filter *filepathfilter.Filter
+	// above is the specified threshold above which to track a file with lfs
+	above uint64
 	// db is the *ObjectDatabase from which blobs, commits, and trees are
 	// loaded from.
 	db *gitobj.ObjectDatabase
@@ -192,7 +194,24 @@ func NewRewriter(db *gitobj.ObjectDatabase, opts ...rewriterOption) *Rewriter {
 		mu:      new(sync.Mutex),
 		entries: make(map[string]*gitobj.TreeEntry),
 		commits: make(map[string][]byte),
+		above:   0,
 
+		db: db,
+	}
+
+	for _, opt := range opts {
+		opt(rewriter)
+	}
+	return rewriter
+}
+
+// NewRewriter constructs a *Rewriter from the given *ObjectDatabase instance.
+func NewRewriterWithAbove(db *gitobj.ObjectDatabase, above uint64, opts ...rewriterOption) *Rewriter {
+	rewriter := &Rewriter{
+		mu:      new(sync.Mutex),
+		entries: make(map[string]*gitobj.TreeEntry),
+		commits: make(map[string][]byte),
+		above:   above,
 		db: db,
 	}
 
@@ -383,6 +402,20 @@ func (r *Rewriter) rewriteTree(commitOID []byte, treeOID []byte, path string,
 		if entry.Filemode == 0120000 {
 			entries = append(entries, copyEntry(entry))
 			continue
+		}
+
+		// If we used --above, and we're below the threshold, skip it
+		if r.above != 0 && entry.Type() == gitobj.BlobObjectType {
+			blobSize, err := r.db.GetBlobSize(entry.Oid)
+
+			if err != nil {
+				return nil, err
+			}
+
+			if uint64(blobSize) < r.above {
+				entries = append(entries, copyEntry(entry))
+				continue
+			}
 		}
 
 		if cached := r.uncacheEntry(fullpath, entry); cached != nil {

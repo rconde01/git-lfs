@@ -199,6 +199,7 @@ BUILD = GOOS=$(1) GOARCH=$(2) \
 	-ldflags="$(LD_FLAGS)" \
 	-gcflags="$(GC_FLAGS)" \
 	-trimpath \
+	-mod=vendor \
 	-o ./bin/git-lfs$(3) $(BUILD_MAIN)
 
 # BUILD_TARGETS is the set of all platforms and architectures that Git LFS is

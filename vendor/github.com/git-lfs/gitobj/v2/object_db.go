@@ -159,6 +159,27 @@ func (o *ObjectDatabase) Object(sha []byte) (Object, error) {
 	return into, o.decode(r, into)
 }
 
+// GetBlobSize returns the size of a Blob as identified by the SHA given, or an error if one was
+// encountered.
+func (o *ObjectDatabase) GetBlobSize(sha []byte) (int64, error) {
+	r, err := o.open(sha)
+	if err != nil {
+		return 0, err
+	}
+
+	typ, size, err := r.Header()
+
+	if err != nil {
+		return 0, err
+	}
+
+	if typ != BlobObjectType {
+		return 0, fmt.Errorf("gitobj: Not a blob")
+	}
+
+	return size, nil
+}
+
 // Blob returns a *Blob as identified by the SHA given, or an error if one was
 // encountered.
 func (o *ObjectDatabase) Blob(sha []byte) (*Blob, error) {

@@ -11,6 +11,7 @@ import (
 	"github.com/git-lfs/git-lfs/v3/git"
 	"github.com/git-lfs/git-lfs/v3/git/githistory"
 	"github.com/git-lfs/git-lfs/v3/tasklog"
+	"github.com/git-lfs/git-lfs/v3/tools/humanize"
 	"github.com/git-lfs/git-lfs/v3/tr"
 	"github.com/git-lfs/gitobj/v2"
 	"github.com/spf13/cobra"
@@ -325,7 +326,13 @@ func getHistoryRewriter(cmd *cobra.Command, db *gitobj.ObjectDatabase, l *tasklo
 	include, exclude := getIncludeExcludeArgs(cmd)
 	filter := buildFilepathFilterWithPatternType(cfg, include, exclude, false, filepathfilter.GitAttributes)
 
-	return githistory.NewRewriter(db,
+	above, err := humanize.ParseBytes(migrateImportAboveFmt)
+
+	if err != nil {
+		return nil
+	}
+
+	return githistory.NewRewriterWithAbove(db,above,
 		githistory.WithFilter(filter), githistory.WithLogger(l))
 }
 
