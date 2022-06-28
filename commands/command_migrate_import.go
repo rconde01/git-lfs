@@ -141,8 +141,9 @@ func migrateImportCommand(cmd *cobra.Command, args []string) {
 	}
 	if above > 0 {
 		include, exclude := getIncludeExcludeArgs(cmd)
-		if include != nil || exclude != nil || migrateFixup {
-			ExitWithError(errors.Errorf(tr.Tr.Get("Cannot use --above with --include, --exclude, --fixup")))
+		_ = exclude
+		if include != nil || migrateFixup {
+			ExitWithError(errors.Errorf(tr.Tr.Get("Cannot use --above with --include, --fixup")))
 		}
 	}
 
